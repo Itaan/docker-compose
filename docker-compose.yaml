@@ -1,0 +1,79 @@
+version: "3.8"
+
+services:
+  vote:
+    image: bretfisher/examplevotingapp_vote
+    ports:
+      - "80:80"
+    networks:
+      - frontend
+    deploy:
+      replicas: 2
+
+  redis:
+    image: redis:3.2
+    networks:
+      - frontend
+    deploy:
+      replicas: 1
+
+  worker:
+    image: bretfisher/examplevotingapp_worker
+    networks:
+      - frontend
+      - backend
+    deploy:
+      replicas: 1
+
+  visual:
+    image: dockersamples/visualizer
+    ports:
+    - "8080:8080"
+    networks:
+      - frontend
+    deploy:
+      replicas: 1
+
+  db:
+    image: postgres:9.4
+    volumes: postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER_FILE: /run/secrets/postgres_login_secret
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password_secret
+    secrets:
+      - postgres_login_secret
+      - postgres_password_secret
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+
+  result:
+   image: bretfisher/examplevotingapp_result
+   ports:
+   - "5001:80"
+   networks:
+   - backend
+   deploy:
+    replicas: 1
+
+secrets:
+  postgres_login_secret:
+    file: /home/oskar/secret_data/postgres_login.txt
+  postgres_password_secret:
+    file: /home/oskar/secret_data/postgres_password.txt
+
+volumes:
+  postgres_backup:
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/oskar/db_data
+
+networks:
+  frontend:
+    driver: overlay
+    attachable: true
+  backend:
+    driver: overlay
+    attachable: true
